@@ -15,9 +15,11 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -63,6 +65,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         holder.alarmtime.setText(alartimes);
         holder.alarmname.setText(alarmnames);
         holder.itemView.setTag(id);
+        holder.itemView.getTag(Math.toIntExact(id));
+
+
 
     }
 
@@ -81,12 +86,16 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             del = itemView.findViewById(R.id.del);
 
             mainLayout = itemView.findViewById(R.id.mainLayout);
+
+
             //Animate Recyclerview
             Animation translate_anim = AnimationUtils.loadAnimation(mcontext, R.anim.translate_anim);
             mainLayout.setAnimation(translate_anim);
 
 
         }
+
+
     }
     @Override
     public int getItemCount() {

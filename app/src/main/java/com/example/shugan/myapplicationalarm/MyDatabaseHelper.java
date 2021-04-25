@@ -36,6 +36,7 @@ class MyDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + DataEntry.TABLE_NAME);
         onCreate(db);
     }
+
 /*
     void addBook(String title, String author){
         SQLiteDatabase db = this.getWritableDatabase();

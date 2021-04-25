@@ -1,18 +1,27 @@
 package com.example.shugan.myapplicationalarm;
 
+import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.TimePickerDialog;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -22,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -35,14 +45,15 @@ public class MainActivity extends AppCompatActivity  {
     Datamodel madapter;
     ArrayList<String> alarmids, alarmtimes, alarmnames;
     RecyclerViewAdapter customAdapter;
-    String id, title, author;
+    //String id, title, author;
     Calendar c;
     int mHour, mMinute;
     AdapterView.OnItemClickListener listener;
     EditText author_input;
     TextView title_input;
-
-
+    private ProgressBar spinner;
+    RecyclerView.ViewHolder viewHolder;
+   // final int tim= (int) System.currentTimeMillis();
     String format;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,12 +68,12 @@ public class MainActivity extends AppCompatActivity  {
 
         title_input = findViewById(R.id.title_input);
         author_input = findViewById(R.id.author_input);
-
-        AppCompatDelegate.setDefaultNightMode(
-                AppCompatDelegate.MODE_NIGHT_YES);
-
         add_button = findViewById(R.id.add_button);
         del = findViewById(R.id.del);
+        //AppCompatDelegate.setDefaultNightMode(
+        //        AppCompatDelegate.MODE_NIGHT_YES);
+
+
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
                 ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -71,71 +82,26 @@ public class MainActivity extends AppCompatActivity  {
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-               // removeItem((long) viewHolder.itemView.getTag());
+
                 removeItem((long) viewHolder.itemView.getTag());
+
             }
         }).attachToRecyclerView(recyclerView);
+
         add_button.setOnClickListener(new View.OnClickListener() {
             @Override
+
             public void onClick(View view) {
 
                 Intent myIntent = new Intent(MainActivity.this, AddActivity.class);
                 startActivity(myIntent);
 
-                /*
-                TimePickerDialog timePickerDialog = new TimePickerDialog(MainActivity.this,
-                        new TimePickerDialog.OnTimeSetListener() {
-
-
-                            @Override
-                            public void onTimeSet(TimePicker view, int hourOfDay,
-                                                  int minute) {
-                                c = Calendar.getInstance();
-                                c.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                c.set(Calendar.MINUTE, minute);
-                                c.set(Calendar.SECOND, 0);
-
-                                // textv.setText(hourOfDay + ":" + minute);
-                                //insertItem(hourOfDay,minute);
-                                //showTime(hourOfDay,minute);
-                                //check selected time for AM ,PM
-
-                                if (hourOfDay == 0) {
-                                    hourOfDay += 12;
-                                    format = "AM";
-                                } else if (hourOfDay == 12) {
-                                    format = "PM";
-                                } else if (hourOfDay > 12) {
-                                    hourOfDay -= 12;
-                                    format = "PM";
-                                } else {
-                                    format = "AM";
-                                }
-                                String dd=hourOfDay+":"+minute + ""+format;
-                                // Toast.makeText(this,"alarm:"+hour + min + format,Toast.LENGTH_LONG).show();
-                                //textv.setText(hour + min + format);
-                                //startAlarm(c);
-                               // title_input.setText(dd);
-                                addItem(dd);
-
-
-
-                            }
-
-                        }, mHour, mMinute, false);
-                timePickerDialog.show();
-*/
-
             }
         });
 
-
     }
 
-
-    public void addItem(String dd, String author_input) {
-
-
+    public void addItem( String dd, String author_input) {
 
         ContentValues cv = new ContentValues();
         cv.put(Datamodel.DataEntry.COLUMN_TITLE, dd);
@@ -146,10 +112,47 @@ public class MainActivity extends AppCompatActivity  {
     }
 
     private void removeItem(long id) {
+
+        Intent intent = new Intent(this, MyBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, Math.toIntExact(id), intent, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        alarmManager.cancel(pendingIntent);
+        pendingIntent.cancel();
+        //if (pendingIntent!=null)
+         //   alarmManager.cancel(pendingIntent);
+       // alarmManager.cancel(pendingIntent);
         mDatabase.delete(Datamodel.DataEntry.TABLE_NAME,
                 Datamodel.DataEntry._ID + "=" + id, null);
         customAdapter.swapCursor(getAllItems());
+        Toast.makeText(this,"id" + id,Toast.LENGTH_SHORT).show();
     }
+
+    public void startAlarm(Calendar cal, int wk) {
+
+        cal.set(Calendar.DAY_OF_WEEK, wk);
+
+        Intent intent = new Intent(this, MyBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 1, intent,0);
+        // if (c.before(Calendar.getInstance())) {
+        //   c.add(Calendar.DATE, 0);
+        // }
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pendingIntent);
+
+    }
+
+    public void startAlarm(Calendar cal) {
+
+        Intent intent = new Intent(this, MyBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 1, intent,0);
+        // if (c.before(Calendar.getInstance())) {
+        //   c.add(Calendar.DATE, 0);
+        // }
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pendingIntent);
+    }
+
+
     private Cursor getAllItems() {
         return mDatabase.query(
                 Datamodel.DataEntry.TABLE_NAME,
@@ -160,7 +163,9 @@ public class MainActivity extends AppCompatActivity  {
                 null,
                 Datamodel.DataEntry.COLUMN_ID + " DESC"
         );
+
     }
+
 }
 /*
     void getAndSetIntentData() {
